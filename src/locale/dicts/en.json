@@ -284,5 +284,7 @@
     "studio.style": "Style",
     "studio.theme": "Toggle dark mode",
     "studio.untitled": "Untitled label",
-    "studio.zoom.fit": "Fit to screen"
+    "studio.zoom.fit": "Fit to screen",
+    "studio.data.saved": "Use saved data",
+    "studio.print.no_rows": "No rows are selected for printing. Tick at least one label in the strip below the canvas."
 }

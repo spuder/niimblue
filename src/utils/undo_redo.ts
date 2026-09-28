@@ -41,14 +41,23 @@ export class UndoRedo {
       return;
     }
 
-    if (this.index !== this.buf.length - 1 && this.index > 0 && this.index <= this.buf.length) {
+    const state: ExportedLabelTemplate = {
+      label: labelProps,
+      canvas: fabricCanvas.toJSON(),
+    };
+
+    // skip no-op pushes (e.g. several events fired for one user action)
+    const current = this.buf[this.index];
+    if (current !== undefined && JSON.stringify(current) === JSON.stringify(state)) {
+      return;
+    }
+
+    // drop redo history
+    if (this.index < this.buf.length - 1) {
       this.buf = this.buf.slice(0, this.index + 1);
     }
 
-    this.buf.push({
-      label: labelProps,
-      canvas: fabricCanvas.toJSON(),
-    });
+    this.buf.push(state);
 
     if (this.buf.length > this.UNDO_MAX) {
       this.buf.shift();

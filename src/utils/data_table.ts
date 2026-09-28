@@ -82,8 +82,14 @@ export const SAMPLE_DATA: DataTable = {
   ],
 };
 
-/** Replace {old} tokens (with optional modifiers) by {new} */
-export const renameToken = (text: string, oldName: string, newName: string): string => {
-  const escaped = oldName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return text.replace(new RegExp(`{(\\s*)${escaped}(?=[\\s|}+-])`, "g"), `{$1${newName}`);
+/** Rename {old} tokens (keeping modifiers) to {new}. All renames are applied in one pass, so swaps and chains work. */
+export const renameTokens = (text: string, renames: [string, string][]): string => {
+  if (renames.length === 0) {
+    return text;
+  }
+  const map = new Map(renames);
+  const names = renames.map(([o]) => o.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  return text.replace(new RegExp(`{(\\s*)(${names})(?=[\\s|}+-])`, "g"), (_m, ws: string, name: string) => {
+    return `{${ws}${map.get(name) ?? name}`;
+  });
 };

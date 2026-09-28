@@ -10,6 +10,7 @@
     connectionState,
     csvData,
     csvEnabled,
+    csvFileName,
     csvInclude,
     csvTable,
     loadedFonts,
@@ -37,9 +38,9 @@
   import Inspector from "$/components/shell/Inspector.svelte";
   import LabelStrip from "$/components/shell/LabelStrip.svelte";
   import PrinterDialog from "$/components/shell/PrinterDialog.svelte";
-  import { describeObject, getObjectText, setObjectText } from "$/utils/object_info";
+  import { describeObject, getObjectText, setObjectText, supportsTokens } from "$/utils/object_info";
   import { importDataFile } from "$/utils/data_actions";
-  import { isDataFile, renameToken, toCsv } from "$/utils/data_table";
+  import { isDataFile, renameTokens, toCsv } from "$/utils/data_table";
   import { renderLabel } from "$/utils/label_render";
 
   const MOBILE_BREAKPOINT = 860;
@@ -90,6 +91,7 @@
     onUpdateLabelProps(data.label);
     if (data.csv) {
       $csvData = data.csv;
+      $csvFileName = data.title ?? "";
       $csvEnabled = true;
     }
     await FileUtils.loadCanvasState(fabricCanvas!, data.canvas);
@@ -102,9 +104,33 @@
     undoState = state;
   };
 
+  let valueUpdateTimer: ReturnType<typeof setTimeout> | undefined;
+  /** An inspector edit is waiting for its debounced undo push */
+  let undoPending = $state<boolean>(false);
+
   const pushUndo = () => {
+    clearTimeout(valueUpdateTimer);
+    valueUpdateTimer = undefined;
+    undoPending = false;
     undo.push(fabricCanvas!, labelProps);
     layersRevision++;
+  };
+
+  /** Commit a debounced inspector edit right away, so it is not lost or merged with other steps */
+  const flushPendingUndo = () => {
+    if (valueUpdateTimer !== undefined) {
+      pushUndo();
+    }
+  };
+
+  const doUndo = () => {
+    flushPendingUndo();
+    undo.undo();
+  };
+
+  const doRedo = () => {
+    flushPendingUndo();
+    undo.redo();
   };
 
   const deleteSelected = () => {
@@ -122,6 +148,12 @@
     editRevision++;
   };
 
+  /** Keyboard belongs to a focused form control (select, button, segmented radio) */
+  const isControlFocused = (): boolean => {
+    const el = document.activeElement;
+    return el instanceof HTMLSelectElement || el instanceof HTMLButtonElement || el?.getAttribute("role") === "radio";
+  };
+
   const onKeyDown = (e: KeyboardEvent) => {
     const key: string = e.key.toLowerCase();
     // windows and linux users are used to ctrl, mac users use cmd
@@ -137,6 +169,12 @@
     }
 
     if (LabelDesignerUtils.isAnyInputFocused(fabricCanvas!)) {
+      return;
+    }
+
+    // Arrows, Enter and Delete belong to a focused inspector control
+    const controlKey = key.startsWith("arrow") || key === "enter" || key === "delete" || key === "backspace";
+    if (controlKey && isControlFocused()) {
       return;
     }
 
@@ -171,18 +209,14 @@
     // Ctrl + Y, Ctrl + Shift + Z
     if ((cmdOrCtrl && key === "y") || (cmdOrCtrl && e.shiftKey && key === "z")) {
       e.preventDefault();
-      if (!undoState.redoDisabled) {
-        undo.redo();
-      }
+      doRedo();
       return;
     }
 
     // Ctrl + Z
     if (cmdOrCtrl && key === "z") {
       e.preventDefault();
-      if (!undoState.undoDisabled) {
-        undo.undo();
-      }
+      doUndo();
       return;
     }
 
@@ -293,6 +327,10 @@
   };
 
   const onPrintClicked = () => {
+    if ($csvEnabled && includedCount === 0) {
+      Toasts.error(new Error($tr("studio.print.no_rows")));
+      return;
+    }
     if ($connectionState === "connected") {
       openPreview();
     } else {
@@ -307,8 +345,6 @@
     openPreview();
   };
 
-  let valueUpdateTimer: ReturnType<typeof setTimeout> | undefined;
-
   const controlValueUpdated = () => {
     if (selectedObject) {
       selectedObject.setCoords();
@@ -316,6 +352,7 @@
       // coalesce rapid inspector edits into one undo step
       clearTimeout(valueUpdateTimer);
       valueUpdateTimer = setTimeout(pushUndo, 800);
+      undoPending = true;
     }
     fabricCanvas!.requestRenderAll();
 
@@ -336,7 +373,8 @@
 
   const insertField = (name: string, target?: fabric.FabricObject, at?: fabric.Point) => {
     const token = `{${name}}`;
-    const obj = target ?? selectedObject;
+    const candidate = target ?? selectedObject;
+    const obj = candidate && supportsTokens(candidate) ? candidate : undefined;
     const text = obj ? getObjectText(obj) : undefined;
 
     if (obj && text !== undefined) {
@@ -362,8 +400,7 @@
     fabricCanvas!.forEachObject((obj) => {
       const text = getObjectText(obj);
       if (text === undefined) return;
-      let newText = text;
-      renames.forEach(([o, n]) => (newText = renameToken(newText, o, n)));
+      const newText = renameTokens(text, renames);
       if (newText !== text) setObjectText(obj, newText);
     });
     fabricCanvas!.requestRenderAll();
@@ -483,7 +520,7 @@
     const field = dt.getData(FIELD_MIME);
     if (field) {
       const target = fabricCanvas!.findTarget(dragEvt as unknown as fabric.TPointerEvent).target;
-      const t = target && getObjectText(target) !== undefined ? target : undefined;
+      const t = target && supportsTokens(target) ? target : undefined;
       insertField(field, t, point);
       return;
     }
@@ -508,14 +545,21 @@
     }
   };
 
+  let previewToken = 0;
+  let previewTimer: ReturnType<typeof setTimeout> | undefined;
+
   const refreshPreviewImage = async () => {
+    const token = ++previewToken;
     if (previewMode !== "preview" || !fabricCanvas) {
       previewImage = "";
       return;
     }
     const row = $csvEnabled ? $csvTable.rows[$activeRow] : undefined;
     const el = await renderLabel(fabricCanvas.toJSON(), labelProps, row);
-    previewImage = el.toDataURL("image/png");
+    // a newer request was made while rendering
+    if (token === previewToken) {
+      previewImage = el.toDataURL("image/png");
+    }
   };
 
   onMount(async () => {
@@ -593,6 +637,8 @@
       pushUndo();
     });
 
+    fabricCanvas.on("before:selection:cleared", flushPendingUndo);
+
     fabricCanvas.on("selection:created", (e): void => {
       selectedCount = e.selected?.length ?? 0;
       selectedObject = e.selected?.length === 1 ? e.selected[0] : undefined;
@@ -600,6 +646,7 @@
     });
 
     fabricCanvas.on("selection:updated", (): void => {
+      flushPendingUndo();
       const active = fabricCanvas!.getActiveObjects();
       selectedCount = active.length;
       selectedObject = active.length === 1 ? active[0] : undefined;
@@ -692,7 +739,9 @@
     void $csvTable;
     void editRevision;
     void layersRevision;
-    refreshPreviewImage();
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(refreshPreviewImage, 120);
+    return () => clearTimeout(previewTimer);
   });
 
   $effect(() => {
@@ -732,12 +781,12 @@
 <div class="studio" class:compact>
   <AppHeader
     bind:title={docTitle}
-    undoDisabled={undoState.undoDisabled}
+    undoDisabled={undoState.undoDisabled && !undoPending}
     redoDisabled={undoState.redoDisabled}
     {printCount}
     {compact}
-    onUndo={() => undo.undo()}
-    onRedo={() => undo.redo()}
+    onUndo={doUndo}
+    onRedo={doRedo}
     onPrinterClick={() => (printerDialogOpen = true)}
     onPrint={onPrintClicked}>
     {#snippet save()}
@@ -775,63 +824,65 @@
     <main class="center">
       <div class="warnings"><BrowserWarning /></div>
 
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="stage canvas-wrapper" bind:this={stageEl} onpointerdown={onStagePointerDown}>
-        <div class="stage-inner">
-          <div class="caption mono">
-            <span>{sizeCaption}</span>
-            <span class="feed" title={$tr("params.label.direction")}>
-              <MdIcon icon={labelProps.printDirection === "left" ? "arrow_back" : "arrow_upward"} />
-            </span>
-          </div>
-          <div class="paper" class:with-shadow={labelProps.shape !== "circle"} style:border-radius={paperRadius}>
-            <canvas bind:this={htmlCanvas}></canvas>
-            {#if previewMode === "preview" && previewImage}
-              <img class="preview-overlay" src={previewImage} alt={$tr("editor.preview")} />
-            {/if}
+      <div class="stage-area">
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="stage canvas-wrapper" bind:this={stageEl} onpointerdown={onStagePointerDown}>
+          <div class="stage-inner">
+            <div class="caption mono">
+              <span>{sizeCaption}</span>
+              <span class="feed" title={$tr("params.label.direction")}>
+                <MdIcon icon={labelProps.printDirection === "left" ? "arrow_back" : "arrow_upward"} />
+              </span>
+            </div>
+            <div class="paper" class:with-shadow={labelProps.shape !== "circle"} style:border-radius={paperRadius}>
+              <canvas bind:this={htmlCanvas}></canvas>
+              {#if previewMode === "preview" && previewImage}
+                <img class="preview-overlay" src={previewImage} alt={$tr("editor.preview")} />
+              {/if}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="float-toolbar">
-        <Segmented
-          size="sm"
-          bind:value={previewMode}
-          options={[
-            { value: "fields", label: $tr("studio.fields") },
-            { value: "preview", label: $tr("editor.preview") },
-          ]} />
-        {#if rowCount > 0}
-          <div class="stepper mono">
-            <button disabled={$activeRow <= 0} onclick={() => activeRow.set($activeRow - 1)} aria-label="previous">
-              <MdIcon icon="chevron_left" />
-            </button>
-            <span>{$activeRow + 1} / {rowCount}</span>
-            <button
-              disabled={$activeRow >= rowCount - 1}
-              onclick={() => activeRow.set($activeRow + 1)}
-              aria-label="next">
-              <MdIcon icon="chevron_right" />
-            </button>
-          </div>
-        {/if}
-      </div>
+        <div class="float-toolbar">
+          <Segmented
+            size="sm"
+            bind:value={previewMode}
+            options={[
+              { value: "fields", label: $tr("studio.fields") },
+              { value: "preview", label: $tr("editor.preview") },
+            ]} />
+          {#if rowCount > 0}
+            <div class="stepper mono">
+              <button disabled={$activeRow <= 0} onclick={() => activeRow.set($activeRow - 1)} aria-label="previous">
+                <MdIcon icon="chevron_left" />
+              </button>
+              <span>{$activeRow + 1} / {rowCount}</span>
+              <button
+                disabled={$activeRow >= rowCount - 1}
+                onclick={() => activeRow.set($activeRow + 1)}
+                aria-label="next">
+                <MdIcon icon="chevron_right" />
+              </button>
+            </div>
+          {/if}
+        </div>
 
-      <div class="stage-tools">
-        <button class:active={$appConfig.gridEnabled} onclick={toggleGrid} title={$tr("editor.grid")}>
-          <MdIcon icon="grid_on" />
-        </button>
-        <button onclick={clearCanvas} title={$tr("editor.clear")}>
-          <MdIcon icon="cancel_presentation" />
-        </button>
-      </div>
+        <div class="stage-tools">
+          <button class:active={$appConfig.gridEnabled} onclick={toggleGrid} title={$tr("editor.grid")}>
+            <MdIcon icon="grid_on" />
+          </button>
+          <button onclick={clearCanvas} title={$tr("editor.clear")}>
+            <MdIcon icon="cancel_presentation" />
+          </button>
+        </div>
 
-      <div class="zoom-pill mono">
-        <button onclick={() => setZoom(zoomRatio / 1.25)} aria-label="zoom out"><MdIcon icon="remove" /></button>
-        <button class="pct" onclick={() => setZoom(1)} title={$tr("studio.zoom.fit")}>
-          {Math.round(zoomRatio * 100)}%
-        </button>
-        <button onclick={() => setZoom(zoomRatio * 1.25)} aria-label="zoom in"><MdIcon icon="add" /></button>
+        <div class="zoom-pill mono">
+          <button onclick={() => setZoom(zoomRatio / 1.25)} aria-label="zoom out"><MdIcon icon="remove" /></button>
+          <button class="pct" onclick={() => setZoom(1)} title={$tr("studio.zoom.fit")}>
+            {Math.round(zoomRatio * 100)}%
+          </button>
+          <button onclick={() => setZoom(zoomRatio * 1.25)} aria-label="zoom in"><MdIcon icon="add" /></button>
+        </div>
       </div>
 
       <LabelStrip getCanvasJson={() => fabricCanvas?.toJSON()} {labelProps} revision={layersRevision} {compact} />
@@ -936,7 +987,13 @@
     display: flex;
     flex-direction: column;
     position: relative;
-    --strip-h: 112px;
+  }
+  .stage-area {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
   }
   .warnings :global(.alert) {
     margin: 8px 12px 0;
@@ -1052,7 +1109,7 @@
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-float);
     z-index: 4;
-    bottom: var(--strip-h);
+    bottom: 12px;
   }
   .zoom-pill {
     right: 12px;
@@ -1122,9 +1179,6 @@
   }
   .studio.compact .left-data :global(.data-panel) {
     border-top: 0;
-  }
-  .studio.compact .center {
-    --strip-h: 90px;
   }
   .studio.compact .stage-inner {
     padding: 56px 16px 24px;
