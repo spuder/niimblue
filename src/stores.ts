@@ -71,10 +71,9 @@ export const csvTable = derived(csvData, ($csvData): CsvTable => {
 
 userFonts.subscribe(FileUtils.loadFonts);
 
+// New data invalidates per-row flags. Callers that keep flags (loadTable) set them after the data.
 csvTable.subscribe((t) => {
-  if (get(csvInclude).length !== t.rows.length) {
-    csvInclude.set(t.rows.map(() => true));
-  }
+  csvInclude.set(t.rows.map(() => true));
   if (get(activeRow) >= t.rows.length) {
     activeRow.set(Math.max(0, t.rows.length - 1));
   }

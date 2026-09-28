@@ -2,7 +2,7 @@
   import AppModal from "$/components/basic/AppModal.svelte";
   import MdIcon from "$/components/basic/MdIcon.svelte";
   import { csvEnabled, csvFileName, csvInclude } from "$/stores";
-  import { currentTable, downloadCsv, loadTable } from "$/utils/data_actions";
+  import { currentTable, downloadCsv, hasSavedData, loadTable } from "$/utils/data_actions";
   import { tr as i18n } from "$/utils/i18n";
   import { get } from "svelte/store";
 
@@ -14,13 +14,15 @@
 
   let { show = $bindable(), onRenameColumns }: Props = $props();
 
-  const initial = get(csvEnabled) ? currentTable() : { columns: ["field1", "field2"], rows: [["", ""]] };
+  // Start from enabled or previously saved data, so "Done" never silently replaces it
+  const useExisting = get(csvEnabled) || hasSavedData();
+  const initial = useExisting ? currentTable() : { columns: ["field1", "field2"], rows: [["", ""]] };
   const originalColumns = [...initial.columns];
 
   let columns = $state<string[]>([...initial.columns]);
   let rows = $state<string[][]>(initial.rows.map((r) => [...r]));
   let include = $state<boolean[]>(
-    get(csvEnabled) ? initial.rows.map((_, i) => get(csvInclude)[i] ?? true) : initial.rows.map(() => true),
+    useExisting ? initial.rows.map((_, i) => get(csvInclude)[i] ?? true) : initial.rows.map(() => true),
   );
   let modalRef: AppModal;
 

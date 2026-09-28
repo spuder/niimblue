@@ -6,8 +6,8 @@
 <script lang="ts">
   import IconButton from "$/components/basic/IconButton.svelte";
   import MdIcon from "$/components/basic/MdIcon.svelte";
-  import { activeRow, csvEnabled, csvFileName, csvInclude, csvTable } from "$/stores";
-  import { clearData, importDataFile, loadTable, pickDataFile } from "$/utils/data_actions";
+  import { activeRow, csvData, csvEnabled, csvFileName, csvInclude, csvTable } from "$/stores";
+  import { clearData, hasSavedData, importDataFile, loadTable, pickDataFile } from "$/utils/data_actions";
   import { isDataFile, SAMPLE_DATA } from "$/utils/data_table";
   import { tr } from "$/utils/i18n";
 
@@ -62,6 +62,13 @@
       <div class="dz-title">{$tr("studio.data.drop")}</div>
       <div class="dz-sub">{$tr("studio.data.drop.sub")}</div>
     </button>
+    {#if $csvData && hasSavedData()}
+      <button class="btn btn-sm btn-primary w-100 mt-2" onclick={() => csvEnabled.set(true)}>
+        <MdIcon icon="history" />
+        {$tr("studio.data.saved")} ({$csvTable.rows.length}
+        {$tr("studio.data.rows")})
+      </button>
+    {/if}
     <div class="d-flex gap-2 mt-2">
       <button class="btn btn-sm btn-secondary flex-fill" onclick={() => loadTable(SAMPLE_DATA, "sample.csv")}>
         {$tr("studio.data.sample")}

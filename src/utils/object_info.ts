@@ -58,6 +58,14 @@ export const getObjectText = (obj: fabric.FabricObject): string | undefined => {
   return undefined;
 };
 
+/** Object text may contain {variables}. Only CODE128B barcodes can encode arbitrary text. */
+export const supportsTokens = (obj: fabric.FabricObject): boolean => {
+  if (obj instanceof Barcode) {
+    return obj.encoding === "CODE128B";
+  }
+  return obj instanceof fabric.IText || obj instanceof QRCode;
+};
+
 /** Set text content of a templatable object. Returns false if object does not support text. */
 export const setObjectText = (obj: fabric.FabricObject, text: string): boolean => {
   if (obj instanceof fabric.IText) {

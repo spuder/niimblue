@@ -1,5 +1,6 @@
 import { get } from "svelte/store";
 import { activeRow, csvData, csvEnabled, csvFileName, csvInclude, csvTable } from "$/stores";
+import { CSV_DEFAULT } from "$/defaults";
 import { readDataFile, SpreadsheetNotSupportedError, toCsv, type DataTable } from "$/utils/data_table";
 import { FileUtils } from "$/utils/file_utils";
 import { Toasts } from "$/utils/toasts";
@@ -20,6 +21,12 @@ export const clearData = () => {
   csvEnabled.set(false);
   csvFileName.set("");
   activeRow.set(0);
+};
+
+/** Data persisted from a previous session (not the built-in placeholder) */
+export const hasSavedData = (): boolean => {
+  const data = get(csvData).data.trim();
+  return data !== "" && data !== CSV_DEFAULT && get(csvTable).columns.length > 0;
 };
 
 /** Current data as table */
