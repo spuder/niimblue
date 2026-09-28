@@ -1,0 +1,200 @@
+// Label Studio design tokens (see design handoff). Light by default, dark via [data-bs-theme="dark"].
+// Bootstrap variables are remapped onto the tokens so existing components re-skin automatically.
+
+:root,
+[data-bs-theme="light"] {
+  --ink: oklch(0.23 0.01 260);
+  --ink-2: oklch(0.35 0.01 260);
+  --muted: oklch(0.52 0.012 260);
+  --muted-2: oklch(0.7 0.01 260);
+  --panel: oklch(0.995 0.002 260);
+  --panel-2: oklch(0.98 0.003 260);
+  --app-bg: oklch(0.97 0.003 260);
+  --stage-bg: oklch(0.95 0.004 260);
+  --stage-dot: oklch(0.87 0.006 260);
+  --seg-track: oklch(0.955 0.004 260);
+  --hover: oklch(0.95 0.004 260);
+  --border: oklch(0.91 0.004 260);
+  --border-strong: oklch(0.85 0.006 260);
+  --input-bg: #fff;
+  --accent: oklch(0.55 0.19 258);
+  --accent-hover: oklch(0.5 0.19 258);
+  --accent-ink: oklch(0.45 0.19 258);
+  --accent-soft: oklch(0.95 0.03 258);
+  --field: oklch(0.48 0.12 165);
+  --field-bg: oklch(0.95 0.03 165);
+  --field-border: oklch(0.62 0.1 165);
+  --danger: oklch(0.55 0.18 25);
+  --danger-bg: oklch(0.96 0.02 25);
+  --success: oklch(0.65 0.16 150);
+  --success-bg: oklch(0.965 0.02 150);
+  --success-ink: oklch(0.5 0.14 150);
+  --warning: oklch(0.75 0.15 75);
+  --snap: oklch(0.62 0.2 350);
+  --shadow-rgb: 20, 24, 40;
+  --scrim: rgba(20, 22, 30, 0.32);
+
+  color-scheme: light;
+}
+
+[data-bs-theme="dark"] {
+  --ink: oklch(0.93 0.006 260);
+  --ink-2: oklch(0.85 0.01 260);
+  --muted: oklch(0.72 0.012 260);
+  --muted-2: oklch(0.55 0.01 260);
+  --panel: oklch(0.29 0.004 260);
+  --panel-2: oklch(0.315 0.004 260);
+  --app-bg: oklch(0.25 0.004 260);
+  --stage-bg: oklch(0.235 0.004 260);
+  --stage-dot: oklch(0.33 0.004 260);
+  --seg-track: oklch(0.245 0.004 260);
+  --hover: oklch(0.345 0.004 260);
+  --border: oklch(0.395 0.004 260);
+  --border-strong: oklch(0.4 0.008 260);
+  --input-bg: oklch(0.265 0.004 260);
+  --accent: oklch(0.66 0.17 258);
+  --accent-hover: oklch(0.72 0.15 258);
+  --accent-ink: oklch(0.76 0.14 258);
+  --accent-soft: oklch(0.32 0.07 258);
+  --field: oklch(0.78 0.12 165);
+  --field-bg: oklch(0.3 0.05 165);
+  --field-border: oklch(0.62 0.1 165);
+  --danger: oklch(0.72 0.15 25);
+  --danger-bg: oklch(0.3 0.05 25);
+  --success: oklch(0.68 0.15 150);
+  --success-bg: oklch(0.3 0.05 150);
+  --success-ink: oklch(0.78 0.13 150);
+  --warning: oklch(0.78 0.14 75);
+  --snap: oklch(0.7 0.18 350);
+  --shadow-rgb: 0, 0, 0;
+
+  color-scheme: dark;
+}
+
+:root {
+  --font-ui: "Geist Variable", "Noto Sans Variable", system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+
+  --shadow-float: 0 1px 2px rgba(var(--shadow-rgb), 0.06), 0 4px 16px rgba(var(--shadow-rgb), 0.06);
+  --shadow-label: 0 0 0 1px rgba(20, 24, 40, 0.08), 0 2px 4px rgba(20, 24, 40, 0.06), 0 12px 32px rgba(20, 24, 40, 0.08);
+  --shadow-dialog: 0 24px 64px rgba(var(--shadow-rgb), 0.25);
+  --shadow-seg: 0 1px 2px rgba(var(--shadow-rgb), 0.12);
+}
+
+// Bootstrap remap
+:root,
+[data-bs-theme="light"],
+[data-bs-theme="dark"] {
+  --bs-body-font-family: var(--font-ui);
+  --bs-font-monospace: var(--font-mono);
+  --bs-body-bg: var(--app-bg);
+  --bs-body-color: var(--ink);
+  --bs-emphasis-color: var(--ink);
+  --bs-secondary-color: var(--muted);
+  --bs-tertiary-color: var(--muted-2);
+  --bs-secondary-bg: var(--hover);
+  --bs-tertiary-bg: var(--panel-2);
+  --bs-border-color: var(--border);
+  --bs-border-color-translucent: var(--border);
+  --bs-border-radius: var(--radius-sm);
+  --bs-border-radius-sm: var(--radius-xs);
+  --bs-border-radius-lg: var(--radius-lg);
+  --bs-link-color: var(--accent);
+  --bs-link-hover-color: var(--accent-ink);
+  --bs-focus-ring-color: color-mix(in oklch, var(--accent) 25%, transparent);
+}
+
+.modal {
+  --bs-modal-bg: var(--panel);
+  --bs-modal-border-color: var(--border);
+  --bs-modal-border-radius: var(--radius-xl);
+  --bs-modal-box-shadow: var(--shadow-dialog);
+}
+
+.modal-backdrop {
+  --bs-backdrop-bg: rgb(20, 22, 30);
+  --bs-backdrop-opacity: 0.32;
+}
+
+.dropdown-menu {
+  --bs-dropdown-bg: var(--panel);
+  --bs-dropdown-border-color: var(--border);
+  --bs-dropdown-border-radius: var(--radius-lg);
+  --bs-dropdown-link-hover-bg: var(--hover);
+  --bs-dropdown-link-active-bg: var(--accent);
+  box-shadow: var(--shadow-float);
+}
+
+.form-control,
+.form-select {
+  background-color: var(--input-bg);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--accent);
+  background-color: var(--input-bg);
+  color: var(--ink);
+  box-shadow: 0 0 0 3px var(--bs-focus-ring-color);
+}
+
+.input-group-text {
+  background-color: var(--seg-track);
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--accent);
+  --bs-btn-border-color: var(--accent);
+  --bs-btn-hover-bg: var(--accent-hover);
+  --bs-btn-hover-border-color: var(--accent-hover);
+  --bs-btn-active-bg: var(--accent-hover);
+  --bs-btn-active-border-color: var(--accent-hover);
+  --bs-btn-disabled-bg: var(--accent);
+  --bs-btn-disabled-border-color: var(--accent);
+  --bs-btn-color: #fff;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-active-color: #fff;
+}
+
+.btn-secondary {
+  --bs-btn-bg: var(--panel);
+  --bs-btn-color: var(--ink);
+  --bs-btn-border-color: var(--border);
+  --bs-btn-hover-bg: var(--hover);
+  --bs-btn-hover-color: var(--ink);
+  --bs-btn-hover-border-color: var(--border-strong);
+  --bs-btn-active-bg: var(--hover);
+  --bs-btn-active-color: var(--ink);
+  --bs-btn-active-border-color: var(--border-strong);
+  --bs-btn-disabled-bg: var(--panel);
+  --bs-btn-disabled-color: var(--muted-2);
+  --bs-btn-disabled-border-color: var(--border);
+}
+
+.btn-danger {
+  --bs-btn-bg: var(--danger);
+  --bs-btn-border-color: var(--danger);
+  --bs-btn-hover-bg: var(--danger);
+  --bs-btn-hover-border-color: var(--danger);
+}
+
+.form-check-input:checked {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
+.progress {
+  --bs-progress-bar-bg: var(--accent);
+  --bs-progress-bg: var(--seg-track);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}

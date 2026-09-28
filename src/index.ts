@@ -1,3 +1,5 @@
+import "@fontsource-variable/geist";
+import "@fontsource-variable/geist-mono";
 import "$/styles/style.scss";
 import "@popperjs/core";
 import "toastify-js/src/toastify.css";

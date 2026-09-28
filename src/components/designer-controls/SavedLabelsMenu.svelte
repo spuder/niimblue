@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import { tr } from "$/utils/i18n";
   import { onMount } from "svelte";
   import MdIcon from "$/components/basic/MdIcon.svelte";
@@ -16,14 +17,26 @@
     onLoadRequested: (label: ExportedLabelTemplate) => void;
     canvas: fabric.Canvas;
     csvEnabled: boolean;
+    /** Label title, shared with the document name field */
+    title?: string;
+    /** Custom dropdown trigger content */
+    trigger?: Snippet;
+    triggerClass?: string;
   }
 
-  let { onRequestLabelTemplate, onLoadRequested, canvas, csvEnabled }: Props = $props();
+  let {
+    onRequestLabelTemplate,
+    onLoadRequested,
+    canvas,
+    csvEnabled,
+    title = $bindable(""),
+    trigger,
+    triggerClass = "btn btn-sm btn-secondary",
+  }: Props = $props();
 
   let dropdownRef: HTMLDivElement;
   let savedLabels = $state<ExportedLabelTemplate[]>([]);
   let selectedIndex = $state<number>(-1);
-  let title = $state<string>("");
   let usedSpace = $state<number>(0);
   let customDefaultTemplate = $state<boolean>(LocalStoragePersistence.hasCustomDefaultTemplate());
   let isStandalone = Utils.getAvailableTransports().capacitorBle;
@@ -202,8 +215,12 @@
 </script>
 
 <div class="dropdown">
-  <button class="btn btn-sm btn-secondary" data-bs-toggle="dropdown" data-bs-auto-close="outside">
-    <MdIcon icon="sd_storage" />
+  <button class={triggerClass} data-bs-toggle="dropdown" data-bs-auto-close="outside">
+    {#if trigger}
+      {@render trigger()}
+    {:else}
+      <MdIcon icon="sd_storage" />
+    {/if}
   </button>
   <div class="saved-labels dropdown-menu" bind:this={dropdownRef}>
     <h6 class="dropdown-header text-wrap">

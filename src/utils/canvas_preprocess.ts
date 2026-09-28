@@ -33,7 +33,7 @@ const preprocessDateTime = (format?: string, sign?: string, amount?: string, uni
   return date.format(format ?? "YYYY-MM-DD HH:mm:ss");
 };
 
-const preprocessString = (input: string, variables?: Variables): string => {
+export const preprocessString = (input: string, variables?: Variables): string => {
   return input.replace(
     VARIABLE_TEMPLATE_RX,
     (source, key: string, sign?: string, amount?: string, unit?: string, format?: string) => {
