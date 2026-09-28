@@ -29,6 +29,8 @@ export class CustomCanvas extends fabric.Canvas {
   private highlightMirror: boolean = true;
   private gridEnabled: boolean = false;
   private virtualZoomRatio: number = 1;
+  /** Base CSS scale that fits the label into the stage. virtualZoomRatio is a multiplier on top of it. */
+  private fitScale: number = 1;
   onZoomChange?: (zoom: number) => void;
 
   constructor(
@@ -148,13 +150,15 @@ export class CustomCanvas extends fabric.Canvas {
 
   public virtualZoom(newZoom: number) {
     this.virtualZoomRatio = Math.min(Math.max(0.25, newZoom), 4);
+    const scale = this.getCssScale();
     this.setDimensions(
       {
-        width: this.virtualZoomRatio * this.getWidth() + "px",
-        height: this.virtualZoomRatio * this.getHeight() + "px",
+        width: scale * this.getWidth() + "px",
+        height: scale * this.getHeight() + "px",
       },
       { cssOnly: true },
     );
+    this.applyControlsScale(scale);
     if (this.onZoomChange) {
       this.onZoomChange(this.virtualZoomRatio);
     }
@@ -170,6 +174,32 @@ export class CustomCanvas extends fabric.Canvas {
 
   public getVirtualZoom(): number {
     return this.virtualZoomRatio;
+  }
+
+  /** Total CSS scale of the canvas element (fit * zoom) */
+  public getCssScale(): number {
+    return this.fitScale * this.virtualZoomRatio;
+  }
+
+  public setFitScale(value: number) {
+    if (!isFinite(value) || value <= 0) {
+      return;
+    }
+    this.fitScale = value;
+    this.virtualZoom(this.virtualZoomRatio);
+  }
+
+  /** Keep selection handles the same on-screen size regardless of CSS scale */
+  private applyControlsScale(scale: number) {
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+    const props = {
+      cornerSize: (coarse ? 16 : 10) / scale,
+      touchCornerSize: 24 / scale,
+      borderScaleFactor: 1.5 / scale,
+    };
+    Object.assign(fabric.InteractiveFabricObject.ownDefaults, props);
+    this.forEachObject((o) => o.set(props));
+    this.requestRenderAll();
   }
 
   public resetVirtualZoom() {

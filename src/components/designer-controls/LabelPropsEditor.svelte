@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import {
     LabelPresetSchema,
     type LabelPreset,
@@ -25,9 +26,12 @@
   interface Props {
     labelProps: LabelProps;
     onChange: (newProps: LabelProps) => void;
+    /** Custom dropdown trigger content */
+    trigger?: Snippet;
+    triggerClass?: string;
   }
 
-  let { labelProps, onChange }: Props = $props();
+  let { labelProps, onChange, trigger, triggerClass = "btn btn-sm btn-secondary" }: Props = $props();
 
   const tailPositions: TailPosition[] = ["right", "bottom", "left", "top"];
   const printDirections: PrintDirection[] = ["left", "top"];
@@ -114,6 +118,7 @@
       tailPos,
       tailLength: Math.floor(newTailLength),
       mirror,
+      dpmm: unit === "mm" ? dpmm : labelProps.dpmm,
     });
   };
 
@@ -192,6 +197,7 @@
 
   const fillWithCurrentParams = () => {
     prevUnit = "px";
+    dpmm = labelProps.dpmm ?? dpmm;
     width = labelProps.size.width;
     height = labelProps.size.height;
     printDirection = labelProps.printDirection;
@@ -268,8 +274,12 @@
 </script>
 
 <div class="dropdown">
-  <button class="btn btn-sm btn-secondary" data-bs-toggle="dropdown" data-bs-auto-close="outside">
-    <MdIcon icon="settings" />
+  <button class={triggerClass} data-bs-toggle="dropdown" data-bs-auto-close="outside">
+    {#if trigger}
+      {@render trigger()}
+    {:else}
+      <MdIcon icon="settings" />
+    {/if}
   </button>
   <div class="dropdown-menu">
     <h6 class="dropdown-header">{$tr("params.label.menu_title")}</h6>

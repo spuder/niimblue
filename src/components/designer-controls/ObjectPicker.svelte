@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import { type LabelProps, type OjectType } from "$/types";
   import { tr } from "$/utils/i18n";
   import MdIcon from "$/components/basic/MdIcon.svelte";
@@ -10,15 +11,29 @@
     labelProps: LabelProps;
     zplImageReady: (img: Blob) => void;
     pdfImageReady: (img: HTMLCanvasElement) => void;
+    /** Custom dropdown trigger content */
+    trigger?: Snippet;
+    triggerClass?: string;
   }
 
-  let { onSubmit, labelProps, zplImageReady, pdfImageReady }: Props = $props();
+  let {
+    onSubmit,
+    labelProps,
+    zplImageReady,
+    pdfImageReady,
+    trigger,
+    triggerClass = "btn btn-sm btn-secondary",
+  }: Props = $props();
 </script>
 
 <div class="dropdown">
-  <button class="btn btn-sm btn-secondary" data-bs-toggle="dropdown" data-bs-auto-close="outside">
-    <MdIcon icon="format_shapes" />
-    <MdIcon icon="add" />
+  <button class={triggerClass} data-bs-toggle="dropdown" data-bs-auto-close="outside">
+    {#if trigger}
+      {@render trigger()}
+    {:else}
+      <MdIcon icon="format_shapes" />
+      <MdIcon icon="add" />
+    {/if}
   </button>
 
   <div class="dropdown-menu">

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
@@ -21,6 +21,16 @@
           href="node_modules/@fontsource-variable/noto-sans/files/noto-sans-cyrillic-wght-normal.woff2"/>
     <link rel="preload" as="font" type="font/woff2" crossorigin="anonymous"
           href="node_modules/material-icons/iconfont/material-icons.woff2"/>
+
+    <script>
+      // Apply theme before first paint to avoid a flash
+      (function () {
+        var t = null;
+        try { t = localStorage.getItem("niimblue-theme"); } catch (e) {}
+        if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.setAttribute("data-bs-theme", t);
+      })();
+    </script>
 
     <title>%VITE_PAGE_TITLE%</title>
   </head>

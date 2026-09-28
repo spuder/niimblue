@@ -13,9 +13,14 @@
 @import "bootstrap/scss/alert";
 @import "bootstrap/scss/transitions";
 @import "font";
+@import "tokens";
+@import "studio";
 
 body {
-  font-family: "Noto Sans Variable", sans-serif;
+  font-family: var(--font-ui);
+  background: var(--app-bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
 }
 
 .toastify.toast-danger {

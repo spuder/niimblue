@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import { onDestroy, onMount } from "svelte";
   import { tr } from "$/utils/i18n";
   import { iconCodepoints, type MaterialIcon } from "$/styles/mdi_icons";
@@ -10,9 +11,12 @@
   interface Props {
     onSubmit: (i: MaterialIcon) => void;
     onSubmitSvg: (i: string) => void;
+    /** Custom dropdown trigger content */
+    trigger?: Snippet;
+    triggerClass?: string;
   }
 
-  let { onSubmit, onSubmitSvg }: Props = $props();
+  let { onSubmit, onSubmitSvg, trigger, triggerClass = "btn btn-sm btn-secondary" }: Props = $props();
 
   let iconNames = $state<MaterialIcon[]>([]);
   let search = $state<string>("");
@@ -67,9 +71,13 @@
 </script>
 
 <div class="dropdown" bind:this={dropdown}>
-  <button class="btn btn-sm btn-secondary" data-bs-toggle="dropdown" data-bs-auto-close="outside">
-    <MdIcon icon="emoji_emotions" />
-    <MdIcon icon="add" />
+  <button class={triggerClass} data-bs-toggle="dropdown" data-bs-auto-close="outside">
+    {#if trigger}
+      {@render trigger()}
+    {:else}
+      <MdIcon icon="emoji_emotions" />
+      <MdIcon icon="add" />
+    {/if}
   </button>
 
   <div class="dropdown-menu">

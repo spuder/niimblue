@@ -2,10 +2,25 @@ import * as fabric from "fabric";
 import type { AppConfig, LabelPreset, LabelProps } from "$/types";
 import { TextboxExt } from "$/fabric-object/textbox-ext";
 
+/** Canvas can't read CSS variables, keep in sync with --accent / --snap tokens */
+export const SELECTION_ACCENT = "#2f6fe4";
+export const SNAP_GUIDE_COLOR = "#e0408a";
+
 export const configureFabric = () => {
   fabric.config.disableStyleCopyPaste = true;
 
   fabric.classRegistry.setClass(TextboxExt, "Textbox");
+
+  // Selection handles: accent outline, white square corners
+  Object.assign(fabric.InteractiveFabricObject.ownDefaults, {
+    borderColor: SELECTION_ACCENT,
+    cornerColor: "#ffffff",
+    cornerStrokeColor: SELECTION_ACCENT,
+    cornerStyle: "rect",
+    transparentCorners: false,
+    padding: 0,
+    borderOpacityWhenMoving: 1,
+  });
 
   fabric.Line.prototype.setControlsVisibility({
     tl: false,
