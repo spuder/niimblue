@@ -1,0 +1,63 @@
+name: Deploy demo to GitHub Pages
+
+on:
+  push:
+    branches:
+      - pages/label-studio-demo
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build dist
+    runs-on: ubuntu-latest
+    # Fork-only demo deployment, never runs upstream
+    if: github.repository == 'spuder/niimblue'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: ./package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check code
+        run: npm run sv-check
+
+      - name: Build
+        run: npx vite build --base="/niimblue/"
+        env:
+          COMMIT_HASH: ${{ github.sha }}
+          VITE_DEPLOY_BASE_URL: https://spuder.github.io/niimblue
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
